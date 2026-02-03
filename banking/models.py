@@ -95,10 +95,6 @@ class Transaction(models.Model):
         if self.type_transaction == 'VIREMENT' and not self.compte_destination:
             raise ValidationError("Un virement nécessite un compte de destination")
         
-        if self.type_transaction == 'RETRAIT':
-            if self.montant > self.compte_source.solde:
-                raise ValidationError("Solde insuffisant pour effectuer ce retrait")
-        
         if self.type_transaction in ['RETRAIT', 'VIREMENT']:
             if self.montant > self.compte_source.solde:
                 raise ValidationError("Solde insuffisant pour effectuer cette transaction")

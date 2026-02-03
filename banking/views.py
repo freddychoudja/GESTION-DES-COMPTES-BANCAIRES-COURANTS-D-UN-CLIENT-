@@ -18,6 +18,18 @@ def dashboard(request, compte_id):
     all_transactions = list(transactions_entrantes) + list(transactions_sortantes)
     all_transactions.sort(key=lambda x: x.date_transaction, reverse=True)
     
+    # Add helper attributes for template rendering
+    for trans in all_transactions:
+        # Determine if transaction is incoming (positive) for this account
+        if trans.type_transaction == 'DEPOT':
+            trans.is_incoming = True
+        elif trans.type_transaction == 'RETRAIT':
+            trans.is_incoming = False
+        elif trans.type_transaction == 'VIREMENT':
+            trans.is_incoming = (trans.compte_destination and trans.compte_destination.id == compte.id)
+        else:
+            trans.is_incoming = False
+    
     context = {
         'compte': compte,
         'transactions': all_transactions[:20],  # Last 20 transactions

@@ -70,7 +70,7 @@
                 {% if transactions %}
                 <div class="list-group">
                     {% for transaction in transactions %}
-                    <div class="list-group-item {% if transaction.compte_destination.id == compte.id %}transaction-in{% else %}transaction-out{% endif %}">
+                    <div class="list-group-item {% if transaction.is_incoming %}transaction-in{% else %}transaction-out{% endif %}">
                         <div class="d-flex w-100 justify-content-between">
                             <h6 class="mb-1">
                                 <i class="bi 
@@ -84,8 +84,8 @@
                         </div>
                         <p class="mb-1">
                             <strong>Montant:</strong> 
-                            <span class="{% if transaction.compte_destination.id == compte.id %}text-success{% else %}text-danger{% endif %}">
-                                {% if transaction.compte_destination.id == compte.id %}+{% else %}-{% endif %}{{ transaction.montant }}€
+                            <span class="{% if transaction.is_incoming %}text-success{% else %}text-danger{% endif %}">
+                                {% if transaction.is_incoming %}+{% else %}-{% endif %}{{ transaction.montant }}€
                             </span>
                         </p>
                         {% if transaction.type_transaction == 'VIREMENT' %}

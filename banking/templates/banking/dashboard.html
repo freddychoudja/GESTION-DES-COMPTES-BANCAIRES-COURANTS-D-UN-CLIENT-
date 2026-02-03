@@ -1,0 +1,115 @@
+{% extends 'banking/base.html' %}
+
+{% block title %}Dashboard - {{ compte.iban }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <a href="{% url 'liste_comptes' %}" class="btn btn-outline-secondary mb-3">
+            <i class="bi bi-arrow-left"></i> Retour aux comptes
+        </a>
+        <h2><i class="bi bi-speedometer2"></i> Dashboard - {{ compte.iban }}</h2>
+    </div>
+</div>
+
+<!-- Account Info Card -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-circle"></i> Informations du Compte</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Titulaire:</strong> {{ compte.client.nom }} {{ compte.client.prenom }}</p>
+                <p><strong>CNI:</strong> {{ compte.client.cni }}</p>
+                <p><strong>Type:</strong> {{ compte.get_type_compte_display }}</p>
+                <p><strong>Date d'ouverture:</strong> {{ compte.date_ouverture|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Solde Actuel</h5>
+            </div>
+            <div class="card-body text-center">
+                <h1 class="display-3 text-success">{{ compte.solde }}€</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <a href="{% url 'depot' compte.id %}" class="btn btn-success btn-lg w-100">
+            <i class="bi bi-plus-circle"></i> Effectuer un Dépôt
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'retrait' compte.id %}" class="btn btn-warning btn-lg w-100">
+            <i class="bi bi-dash-circle"></i> Effectuer un Retrait
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'virement' compte.id %}" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-arrow-left-right"></i> Effectuer un Virement
+        </a>
+    </div>
+</div>
+
+<!-- Transaction History -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Historique des Transactions</h5>
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                <div class="list-group">
+                    {% for transaction in transactions %}
+                    <div class="list-group-item {% if transaction.compte_destination.id == compte.id %}transaction-in{% else %}transaction-out{% endif %}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">
+                                <i class="bi 
+                                    {% if transaction.type_transaction == 'DEPOT' %}bi-plus-circle text-success
+                                    {% elif transaction.type_transaction == 'RETRAIT' %}bi-dash-circle text-warning
+                                    {% else %}bi-arrow-left-right text-primary{% endif %}">
+                                </i>
+                                {{ transaction.get_type_transaction_display }}
+                            </h6>
+                            <small>{{ transaction.date_transaction|date:"d/m/Y H:i" }}</small>
+                        </div>
+                        <p class="mb-1">
+                            <strong>Montant:</strong> 
+                            <span class="{% if transaction.compte_destination.id == compte.id %}text-success{% else %}text-danger{% endif %}">
+                                {% if transaction.compte_destination.id == compte.id %}+{% else %}-{% endif %}{{ transaction.montant }}€
+                            </span>
+                        </p>
+                        {% if transaction.type_transaction == 'VIREMENT' %}
+                        <p class="mb-1">
+                            {% if transaction.compte_source.id == compte.id %}
+                                <strong>Vers:</strong> {{ transaction.compte_destination.iban }}
+                            {% else %}
+                                <strong>De:</strong> {{ transaction.compte_source.iban }}
+                            {% endif %}
+                        </p>
+                        {% endif %}
+                        {% if transaction.description %}
+                        <small class="text-muted">{{ transaction.description }}</small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle"></i> Aucune transaction disponible pour ce compte.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

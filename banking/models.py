@@ -91,7 +91,11 @@ class Transaction(models.Model):
         return f"{self.type_transaction} - {self.montant}€ - {self.date_transaction.strftime('%d/%m/%Y %H:%M')}"
     
     def clean(self):
-        """Validate transaction rules"""
+        """
+        Validate transaction rules.
+        Note: This provides model-level validation as a safety layer.
+        Primary validation is done in views before transaction.atomic blocks.
+        """
         if self.type_transaction == 'VIREMENT' and not self.compte_destination:
             raise ValidationError("Un virement nécessite un compte de destination")
         

@@ -14,6 +14,7 @@ class CompteAdmin(admin.ModelAdmin):
     list_display = ('iban', 'client', 'type_compte', 'solde', 'actif', 'date_ouverture')
     search_fields = ('iban', 'client__nom', 'client__prenom')
     list_filter = ('type_compte', 'actif', 'date_ouverture')
+    # solde is readonly to maintain data integrity - balance should only change through transactions
     readonly_fields = ('solde',)
 
 

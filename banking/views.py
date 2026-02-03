@@ -10,13 +10,11 @@ def dashboard(request, compte_id):
     """Dashboard view showing balance and transaction history"""
     compte = get_object_or_404(Compte, id=compte_id)
     
-    # Get all transactions for this account
-    transactions_entrantes = compte.transactions_entrantes.all()
-    transactions_sortantes = compte.transactions_sortantes.all()
-    
-    # Combine and sort transactions
-    all_transactions = list(transactions_entrantes) + list(transactions_sortantes)
-    all_transactions.sort(key=lambda x: x.date_transaction, reverse=True)
+    # Get all transactions for this account using Q objects for efficient single query
+    from django.db.models import Q
+    all_transactions = BankTransaction.objects.filter(
+        Q(compte_source=compte) | Q(compte_destination=compte)
+    ).select_related('compte_source', 'compte_destination').order_by('-date_transaction')[:20]
     
     # Add helper attributes for template rendering
     for trans in all_transactions:
@@ -26,13 +24,13 @@ def dashboard(request, compte_id):
         elif trans.type_transaction == 'RETRAIT':
             trans.is_incoming = False
         elif trans.type_transaction == 'VIREMENT':
-            trans.is_incoming = (trans.compte_destination and trans.compte_destination.id == compte.id)
+            trans.is_incoming = (trans.compte_destination_id == compte.id)
         else:
             trans.is_incoming = False
     
     context = {
         'compte': compte,
-        'transactions': all_transactions[:20],  # Last 20 transactions
+        'transactions': all_transactions,
     }
     return render(request, 'banking/dashboard.html', context)
 

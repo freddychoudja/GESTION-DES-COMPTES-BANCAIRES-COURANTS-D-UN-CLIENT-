@@ -1,63 +1,38 @@
 {% extends 'banking/base.html' %}
 
-{% block title %}Virement - {{ compte.iban }}{% endblock %}
+{% block title %}Virement{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <a href="{% url 'dashboard' compte.id %}" class="btn btn-outline-secondary mb-3">
-            <i class="bi bi-arrow-left"></i> Retour au Dashboard
-        </a>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2><i class="bi bi-arrow-left-right"></i> Effectuer un Virement</h2>
+        <p class="text-muted">De: {{ compte.type_compte }} - {{ compte.iban }}</p>
+        <p>Solde actuel: <span class="badge bg-success">{{ compte.solde }} F CFA</span></p>
         
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0"><i class="bi bi-arrow-left-right"></i> Effectuer un Virement</h4>
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="compte_destination" class="form-label">Compte Destinataire</label>
+                <select class="form-select" id="compte_destination" name="compte_destination" required>
+                    <option value="">-- Sélectionner --</option>
+                    {% for c in comptes_disponibles %}
+                        <option value="{{ c.id }}">{{ c.client.nom }} {{ c.client.prenom }} - {{ c.iban }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <p><strong>Compte source:</strong> {{ compte.iban }}</p>
-                    <p><strong>Solde actuel:</strong> <span class="text-success fs-5">{{ compte.solde }}€</span></p>
-                </div>
-                
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> 
-                    Le virement utilise <code>transaction.atomic</code> pour garantir la cohérence des données.
-                </div>
-                
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="compte_destination" class="form-label">Compte de destination *</label>
-                        <select class="form-select form-select-lg" id="compte_destination" 
-                                name="compte_destination" required>
-                            <option value="">Sélectionnez un compte</option>
-                            {% for compte_dest in comptes_destination %}
-                            <option value="{{ compte_dest.id }}">
-                                {{ compte_dest.iban }} - {{ compte_dest.client.nom }} {{ compte_dest.client.prenom }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="montant" class="form-label">Montant (€) *</label>
-                        <input type="number" step="0.01" min="0.01" max="{{ compte.solde }}" 
-                               class="form-control form-control-lg" id="montant" name="montant" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description (optionnel)</label>
-                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
-                    </div>
-                    
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="bi bi-check-circle"></i> Valider le Virement
-                        </button>
-                    </div>
-                </form>
+            <div class="mb-3">
+                <label for="montant" class="form-label">Montant (F CFA)</label>
+                <input type="number" class="form-control" id="montant" name="montant" 
+                       placeholder="Montant en F CFA" required step="0.01" min="0.01">
             </div>
-        </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Motif</label>
+                <textarea class="form-control" id="description" name="description" rows="3" 
+                          placeholder="Motif du virement"></textarea>
+            </div>
+            <button type="submit" class="btn btn-warning"><i class="bi bi-check"></i> Confirmer le Virement</button>
+            <a href="{% url 'dashboard' compte.id %}" class="btn btn-secondary">Annuler</a>
+        </form>
     </div>
 </div>
 {% endblock %}

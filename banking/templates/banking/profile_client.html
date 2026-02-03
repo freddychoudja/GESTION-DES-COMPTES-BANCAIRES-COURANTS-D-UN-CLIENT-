@@ -1,0 +1,45 @@
+{% extends 'banking/base.html' %}
+
+{% block title %}Profil Client{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-fill"></i> Informations Client</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Nom:</strong> {{ client.nom }} {{ client.prenom }}</p>
+                <p><strong>CNI:</strong> {{ client.cni }}</p>
+                <p><strong>Email:</strong> {{ client.email }}</p>
+                <p><strong>Téléphone:</strong> {{ client.telephone }}</p>
+                <p><strong>Adresse:</strong> {{ client.adresse }}</p>
+                <p><strong>Solde Total:</strong> <span class="badge bg-success">{{ total_solde }} F CFA</span></p>
+                <a href="{% url 'edit_client' client.id %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i> Modifier</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <h3><i class="bi bi-wallet2"></i> Comptes Bancaires</h3>
+        <div class="row">
+            {% for compte in client.comptes.all %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <strong>{{ compte.type_compte }}</strong>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>IBAN:</strong> {{ compte.iban }}</p>
+                            <p><strong>Solde:</strong> <span class="badge bg-success">{{ compte.solde }} F CFA</span></p>
+                            <p><strong>Date Ouverture:</strong> {{ compte.date_ouverture }}</p>
+                            <a href="{% url 'dashboard' compte.id %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i> Détails</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <a href="{% url 'create_compte' client.id %}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Créer un Compte</a>
+    </div>
+</div>
+{% endblock %}

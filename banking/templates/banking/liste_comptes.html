@@ -1,43 +1,28 @@
 {% extends 'banking/base.html' %}
 
-{% block title %}Mes Comptes - Gestion Bancaire{% endblock %}
+{% block title %}Liste des Comptes{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h2 class="mb-4"><i class="bi bi-wallet2"></i> Mes Comptes Bancaires</h2>
-    </div>
-</div>
+<h2><i class="bi bi-wallet2"></i> Tous les Comptes</h2>
 
-<div class="row">
+<div class="row mt-4">
     {% for compte in comptes %}
-    <div class="col-md-6 col-lg-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="bi bi-credit-card"></i> 
-                    {{ compte.get_type_compte_display }}
-                </h5>
-                <p class="card-text">
-                    <strong>Titulaire:</strong> {{ compte.client.nom }} {{ compte.client.prenom }}<br>
-                    <strong>IBAN:</strong> {{ compte.iban }}<br>
-                    <strong>Solde:</strong> <span class="fs-4 fw-bold text-success">{{ compte.solde }}€</span>
-                </p>
-                <div class="d-grid gap-2">
-                    <a href="{% url 'dashboard' compte.id %}" class="btn btn-primary">
-                        <i class="bi bi-speedometer2"></i> Dashboard
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <strong>{{ compte.client.nom }} {{ compte.client.prenom }}</strong>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-title">{{ compte.type_compte }}</h6>
+                    <p><strong>IBAN:</strong> {{ compte.iban }}</p>
+                    <p><strong>Solde:</strong> <span class="badge bg-success">{{ compte.solde }} F CFA</span></p>
+                    <p><strong>Date Ouverture:</strong> {{ compte.date_ouverture }}</p>
+                    <a href="{% url 'dashboard' compte.id %}" class="btn btn-sm btn-info">
+                        <i class="bi bi-eye"></i> Consulter
                     </a>
                 </div>
             </div>
         </div>
-    </div>
-    {% empty %}
-    <div class="col-12">
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> Aucun compte disponible. 
-            Veuillez créer un compte via l'<a href="/admin/" class="alert-link">interface d'administration</a>.
-        </div>
-    </div>
     {% endfor %}
 </div>
 {% endblock %}

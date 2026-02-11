@@ -15,4 +15,5 @@ urlpatterns = [
     path('telecharger_rib/<int:compte_id>/', views.telecharger_rib, name='telecharger_rib'),
     path('telecharger_releve/<int:compte_id>/', views.telecharger_releve, name='telecharger_releve'),
     path('statistiques/<int:compte_id>/', views.statistiques_compte, name='statistiques'),
+    path('transactions/', views.historique_transactions, name='historique_transactions'),
 ]

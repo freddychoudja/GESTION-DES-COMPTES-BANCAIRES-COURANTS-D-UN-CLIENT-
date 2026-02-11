@@ -231,55 +231,61 @@ def retrait(request, compte_id):
     return render(request, 'banking/retrait.html', context)
 
 
+from .forms import VirementForm
+
 def virement(request, compte_id):
-    """Transfer form and handler using transaction.atomic"""
+    """Transfer form and handler using transaction.atomic and select_for_update"""
     compte_source = get_object_or_404(Compte, id=compte_id)
     
-    # Get all active accounts except the source account
-    comptes_destination = Compte.objects.filter(actif=True).exclude(id=compte_id)
-    
     if request.method == 'POST':
-        try:
-            montant = Decimal(request.POST.get('montant', 0))
-            compte_destination_id = request.POST.get('compte_destination')
-            description = request.POST.get('description', '')
+        form = VirementForm(request.POST, client=compte_source.client)
+        if form.is_valid():
+            iban_dest = form.cleaned_data['iban_destination']
+            montant = form.cleaned_data['montant']
+            description = form.cleaned_data['description']
             
-            if not compte_destination_id:
-                messages.error(request, "Veuillez sélectionner un compte de destination")
-            elif montant <= 0:
-                messages.error(request, "Le montant doit être supérieur à 0")
-            elif montant > compte_source.solde:
-                messages.error(request, "Solde insuffisant pour effectuer ce virement")
-            else:
-                compte_destination = get_object_or_404(Compte, id=compte_destination_id)
-                
-                # Use transaction.atomic for transfer
+            try:
                 with transaction.atomic():
-                    # Deduct from source account
-                    compte_source.solde -= montant
-                    compte_source.save()
+                    # Utiliser select_for_update() pour éviter les conditions de course
+                    source = Compte.objects.select_for_update().get(id=compte_id)
+                    destination = Compte.objects.select_for_update().get(iban=iban_dest)
                     
-                    # Add to destination account
-                    compte_destination.solde += montant
-                    compte_destination.save()
+                    if source.solde < montant:
+                        raise ValueError("Solde insuffisant")
                     
-                    # Create transaction record
+                    # Débit / Crédit
+                    source.solde -= montant
+                    destination.solde += montant
+                    
+                    source.save()
+                    destination.save()
+                    
+                    # Enregistrement de la transaction
                     BankTransaction.objects.create(
-                        compte_source=compte_source,
-                        compte_destination=compte_destination,
+                        compte_source=source,
+                        compte_destination=destination,
                         type_transaction='VIREMENT',
                         montant=montant,
                         description=description
                     )
                 
-                messages.success(request, f"Virement de {montant} F CFA effectué avec succès vers {compte_destination.iban}")
-                return redirect('dashboard', compte_id=compte_source.id)
-        except Exception as e:
-            messages.error(request, f"Erreur: {str(e)}")
-    
+                messages.success(request, f"Virement de {montant} {DEVISE} effectué avec succès vers {iban_dest}")
+                return redirect('dashboard', compte_id=source.id)
+            except Compte.DoesNotExist:
+                messages.error(request, "Le compte destinataire avec cet IBAN n'existe pas.")
+            except ValueError as e:
+                messages.error(request, str(e))
+            except Exception as e:
+                messages.error(request, f"Une erreur inattendue est survenue : {str(e)}")
+    else:
+        # Pré-remplir le formulaire avec le compte source
+        form = VirementForm(initial={'compte_source': compte_source}, client=compte_source.client)
+        # On peut verrouiller le champ compte_source si on vient d'un dashboard spécifique
+        form.fields['compte_source'].disabled = True
+
     context = {
         'compte': compte_source,
-        'comptes_destination': comptes_destination,
+        'form': form,
     }
     return render(request, 'banking/virement.html', context)
 
@@ -630,3 +636,59 @@ def statistiques_compte(request, compte_id):
     }
     
     return render(request, 'banking/statistiques.html', context)
+
+
+def historique_transactions(request):
+    """Global transaction history with filters"""
+    transactions = BankTransaction.objects.select_related('compte_source', 'compte_destination', 'compte_source__client', 'compte_destination__client').all()
+    
+    # Filtrage par type
+    type_filtre = request.GET.get('type')
+    if type_filtre:
+        transactions = transactions.filter(type_transaction=type_filtre)
+        
+    # Filtrage par période
+    periode = request.GET.get('periode')
+    today = datetime.now()
+    if periode == '7d':
+        date_debut = today - timedelta(days=7)
+        transactions = transactions.filter(date_transaction__gte=date_debut)
+    elif periode == '30d':
+        date_debut = today - timedelta(days=30)
+        transactions = transactions.filter(date_transaction__gte=date_debut)
+    elif periode == 'last_month':
+        first_day_current_month = today.replace(day=1)
+        last_day_last_month = first_day_current_month - timedelta(days=1)
+        first_day_last_month = last_day_last_month.replace(day=1)
+        transactions = transactions.filter(
+            date_transaction__date__gte=first_day_last_month.date(),
+            date_transaction__date__lte=last_day_last_month.date()
+        )
+
+    # Filtrage par montant min/max
+    montant_min = request.GET.get('montant_min')
+    if montant_min:
+        try:
+            transactions = transactions.filter(montant__gte=Decimal(montant_min))
+        except:
+            pass
+        
+    montant_max = request.GET.get('montant_max')
+    if montant_max:
+        try:
+            transactions = transactions.filter(montant__lte=Decimal(montant_max))
+        except:
+            pass
+
+    context = {
+        'transactions': transactions.order_by('-date_transaction'),
+        'type_choices': BankTransaction.TYPE_CHOICES,
+        'filters': {
+            'type': type_filtre,
+            'periode': periode,
+            'montant_min': montant_min,
+            'montant_max': montant_max,
+        },
+        'DEVISE': DEVISE
+    }
+    return render(request, 'banking/historique_transactions.html', context)

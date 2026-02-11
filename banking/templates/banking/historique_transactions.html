@@ -1,0 +1,117 @@
+{% extends 'banking/base.html' %}
+
+{% block title %}Historique des Transactions{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-clock-history"></i> Historique Global des Transactions</h2>
+        <a href="{% url 'index' %}" class="btn btn-outline-secondary btn-sm">Retour à l'accueil</a>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-3"><i class="bi bi-funnel"></i> Filtres</h5>
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="type" class="form-label small">Type</label>
+                    <select name="type" id="type" class="form-select form-select-sm">
+                        <option value="">Tous</option>
+                        {% for val, label in type_choices %}
+                        <option value="{{ val }}" {% if filters.type == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="periode" class="form-label small">Période</label>
+                    <select name="periode" id="periode" class="form-select form-select-sm">
+                        <option value="">Toutes</option>
+                        <option value="7d" {% if filters.periode == '7d' %}selected{% endif %}>7 derniers jours</option>
+                        <option value="30d" {% if filters.periode == '30d' %}selected{% endif %}>30 derniers jours
+                        </option>
+                        <option value="last_month" {% if filters.periode == 'last_month' %}selected{% endif %}>Mois
+                            dernier</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="montant_min" class="form-label small">Montant min</label>
+                    <input type="number" name="montant_min" id="montant_min" class="form-control form-control-sm"
+                        value="{{ filters.montant_min|default:'' }}" step="0.01">
+                </div>
+                <div class="col-md-2">
+                    <label for="montant_max" class="form-label small">Montant max</label>
+                    <input type="number" name="montant_max" id="montant_max" class="form-control form-control-sm"
+                        value="{{ filters.montant_max|default:'' }}" step="0.01">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i>
+                        Filtrer</button>
+                    <a href="{% url 'historique_transactions' %}" class="btn btn-light btn-sm ms-2"><i
+                            class="bi bi-x-circle"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des transactions -->
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Source</th>
+                        <th>Destination</th>
+                        <th>Montant</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trans in transactions %}
+                    <tr>
+                        <td class="small text-nowrap">{{ trans.date_transaction|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if trans.type_transaction == 'DEPOT' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">Dépôt</span>
+                            {% elif trans.type_transaction == 'RETRAIT' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Retrait</span>
+                            {% else %}
+                            <span
+                                class="badge bg-primary-subtle text-primary border border-primary-subtle">Virement</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="small fw-bold">{{ trans.compte_source.client.nom }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">{{ trans.compte_source.iban }}</div>
+                        </td>
+                        <td>
+                            {% if trans.compte_destination %}
+                            <div class="small fw-bold">{{ trans.compte_destination.client.nom }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">{{ trans.compte_destination.iban }}
+                            </div>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold text-nowrap">
+                            {{ trans.montant }} {{ DEVISE }}
+                        </td>
+                        <td class="small text-muted text-truncate" style="max-width: 200px;">
+                            {{ trans.description|default:"-" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="bi bi-info-circle"></i> Aucune transaction trouvée pour ces critères.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
